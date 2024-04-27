@@ -1,0 +1,60 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Flower Detection</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.0.1"> </script>
+  </head>
+  <body>
+    <input type="file" accept="image/*" onchange="previewImage(event)">
+    <img id="preview" alt="Preview Image" style="display:none; max-width:300px; margin-top:10px;">
+    <div id="prediction"></div>
+
+    <script>
+      let model;
+
+      async function loadModel() {
+        console.log("Cargando modelo...");
+        model = await tf.loadLayersModel("model.json");
+        console.log("Modelo cargado...");
+      }
+
+      const img = document.getElementById('preview');
+      const predictionDiv = document.getElementById('prediction');
+
+      async function predictImage() {
+        if (!model) {
+          await loadModel();
+        }
+
+        const tensor = tf.browser.fromPixels(img)
+                        .resizeNearestNeighbor([224, 224])
+                        .toFloat()
+                        .expandDims();
+        const predictions = await model.predict(tensor).data();
+        console.log('Predictions: ', predictions);
+
+        const classNames = ['Daisy', 'Dandelion', 'Roses', 'Sunflowers', 'Tulips']; 
+
+        const maxPrediction = Math.max(...predictions);
+        const maxIndex = predictions.indexOf(maxPrediction);
+
+        const predictionText = classNames[maxIndex];
+        predictionDiv.innerText = `Predicted flower: ${predictionText}`;
+      }
+
+      function previewImage(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function() {
+          img.src = reader.result;
+          img.style.display = 'block';
+          predictImage();
+        }
+        reader.readAsDataURL(file);
+      }
+    </script>
+  </body>
+</html>
+
